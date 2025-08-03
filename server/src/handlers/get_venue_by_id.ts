@@ -1,29 +1,30 @@
 
+import { db } from '../db';
+import { venuesTable } from '../db/schema';
 import { type Venue } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function getVenueById(venueId: number): Promise<Venue | null> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching a specific venue by ID with all its details
-    // including images, reviews, and related information.
-    return Promise.resolve({
-        id: venueId,
-        name: 'Sample Venue',
-        description: 'A great place for bachelor parties',
-        category: 'nightlife',
-        address: 'Bangkok, Thailand',
-        latitude: null,
-        longitude: null,
-        phone: null,
-        email: null,
-        website_url: null,
-        price_range_min: 1000,
-        price_range_max: 5000,
-        rating: 4.5,
-        review_count: 150,
-        is_active: true,
-        thumbnail_image_url: null,
-        owner_id: 1,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Venue);
-}
+export const getVenueById = async (venueId: number): Promise<Venue | null> => {
+  try {
+    const results = await db.select()
+      .from(venuesTable)
+      .where(eq(venuesTable.id, venueId))
+      .execute();
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const venue = results[0];
+    
+    // Convert numeric fields back to numbers
+    return {
+      ...venue,
+      price_range_min: parseFloat(venue.price_range_min),
+      price_range_max: parseFloat(venue.price_range_max)
+    };
+  } catch (error) {
+    console.error('Failed to get venue by ID:', error);
+    throw error;
+  }
+};

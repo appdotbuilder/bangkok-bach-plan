@@ -1,21 +1,32 @@
 
+import { db } from '../db';
+import { usersTable } from '../db/schema';
 import { type CreateUserInput, type User } from '../schema';
 
-export async function createUser(input: CreateUserInput): Promise<User> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new user account with hashed password
-    // and persisting it in the database.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createUser = async (input: CreateUserInput): Promise<User> => {
+  try {
+    // Hash the password using Bun's built-in password hashing
+    const password_hash = await Bun.password.hash(input.password);
+
+    // Insert user record
+    const result = await db.insert(usersTable)
+      .values({
         email: input.email,
-        password_hash: 'hashed_password', // Should hash the actual password
+        password_hash,
         first_name: input.first_name,
         last_name: input.last_name,
-        phone: input.phone || null,
-        profile_image_url: null,
-        role: 'user',
-        is_verified: false,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as User);
-}
+        phone: input.phone || null
+      })
+      .returning()
+      .execute();
+
+    const user = result[0];
+    return {
+      ...user,
+      // No numeric conversions needed - all fields are correct types
+    };
+  } catch (error) {
+    console.error('User creation failed:', error);
+    throw error;
+  }
+};
